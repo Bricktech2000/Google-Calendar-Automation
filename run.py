@@ -16,6 +16,9 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 
+from random import randint
+import time
+
 #if scopes modfied, delete `token.json`
 scopes = ['https://www.googleapis.com/auth/calendar']
 
@@ -33,18 +36,27 @@ if not creds or not creds.valid:
         token.write(creds.to_json())
 
 service = build('calendar', 'v3', credentials=creds)
-"""event = {
-    'summary': 'testEvent'
-    'start': '',
-    'end': '',
-}"""
+
 now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
-print('Getting the upcoming 10 events')
-events_result = service.events().list(calendarId='primary', timeMin=now,
-                                    maxResults=10, singleEvents=True,
+print('Getting events...')
+events_result = service.events().list(calendarId='primary', timeMin=now, singleEvents=True,
                                     orderBy='startTime').execute()
 events = events_result.get('items', [])
-print(events)
+#print(events)
+
+while True:
+    for event in events:
+        summary = event.get('summary', None)
+        if summary == 'test':
+            start = event['start']['dateTime']
+            end = event['start']['dateTime']
+            #https://lukeboyle.com/blog-posts/2016/04/google-calendar-api---color-id
+            newColor = randint(0, 11)
+            event['colorId'] = newColor
+            #print(event['colorId'])
+            #https://developers.google.com/calendar/v3/reference/events/update
+            service.events().update(calendarId='primary', eventId=event['id'], sendNotifications=False, body=event).execute()
+    time.sleep(.5)
 
 
 
