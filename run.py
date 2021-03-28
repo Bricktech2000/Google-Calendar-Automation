@@ -46,24 +46,25 @@ if not creds or not creds.valid:
 service = build('calendar', 'v3', credentials=creds)
 
 
-print('Running Program...')
+print('Program Running...')
 lastEvents = []
 while True:
-    now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
-    events_result = service.events().list(calendarId='primary', timeMin=now, singleEvents=True,
-                                        orderBy='startTime').execute()
-    events = events_result.get('items', [])
-    #print(events)
+    try:
+        now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
+        events_result = service.events().list(calendarId='primary', timeMin=now, singleEvents=True,
+                                            orderBy='startTime').execute()
+        events = events_result.get('items', [])
+        #print(events)
+    except Exception as e:
+        print('Error Fetching Calendar Data: ', e)
+        time.sleep(.5)
+        continue
 
     different = False
     for i in range(len(events)):
         if len(events) != len(lastEvents) \
         or dtparse(events[i]['updated']) - dtparse(lastEvents[i]['updated']) \
          > dtparse('0:00:03.000') - dtparse('0:00:00.000'): #3 sec
-            #try:
-                #print(dtparse(events[i]['updated']) - dtparse(lastEvents[i]['updated']))
-            #except:
-                #pass
             different = True
             break
     if not different:
@@ -79,7 +80,6 @@ while True:
             total, done = matches.group(1, 2)
             if total == '': total = '100'
             eventProgress = int(done) / int(total)
-            #print(total, done, eventProgress)
 
             #https://developers.google.com/calendar/quickstart/python
             #https://stackoverflow.com/questions/49889379/google-calendar-api-datetime-format-python
@@ -90,20 +90,23 @@ while True:
             end = dtparse(end.get('dateTime', end.get('date'))).replace(tzinfo=None)
             now = datetime.datetime.utcnow()
             durationProgress = (now - start) / (end - start)
-            #print(start, end, now, durationProgress)
 
             factor = 4 #if the event has no (0%) progress, it will have max priority when 1/4 of its duration is left
             eventPriority = (1 - eventProgress) / (1 - durationProgress) / factor
             eventPriority = max(0, min(1, eventPriority))
-            #print(eventPriority)
 
             #https://lukeboyle.com/blog-posts/2016/04/google-calendar-api---color-id
             length = len(priorityColorIds)
             newColor = priorityColorIds[math.ceil(eventPriority * (length - 1))]
             event['colorId'] = newColor
-            #print(event['colorId'])
-            #https://developers.google.com/calendar/v3/reference/events/update
-            service.events().update(calendarId='primary', eventId=event['id'], sendNotifications=False, body=event).execute()
+
+            try:
+                #https://developers.google.com/calendar/v3/reference/events/update
+                service.events().update(calendarId='primary', eventId=event['id'], sendNotifications=False, body=event).execute()
+            except Exception as e:
+                print('Error Updating Calendar Data: ', e)
+                time.sleep(.5)
+                continue
 
 
 
