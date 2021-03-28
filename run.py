@@ -16,8 +16,16 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 
+from dateutil.parser import parse as dtparse
+
 from random import randint
+import math
 import time
+import re
+
+priorityColorIds = [8, 3, 1, 2, 5, 6, 11]
+progressRegExp = re.compile(r'(\d*)\%(\d+)$')
+
 
 #if scopes modfied, delete `token.json`
 scopes = ['https://www.googleapis.com/auth/calendar']
@@ -37,26 +45,65 @@ if not creds or not creds.valid:
 
 service = build('calendar', 'v3', credentials=creds)
 
-now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
-print('Getting events...')
-events_result = service.events().list(calendarId='primary', timeMin=now, singleEvents=True,
-                                    orderBy='startTime').execute()
-events = events_result.get('items', [])
-#print(events)
 
+print('Running Program...')
+lastEvents = []
 while True:
+    now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
+    events_result = service.events().list(calendarId='primary', timeMin=now, singleEvents=True,
+                                        orderBy='startTime').execute()
+    events = events_result.get('items', [])
+    #print(events)
+
+    different = False
+    for i in range(len(events)):
+        if len(events) != len(lastEvents) \
+        or dtparse(events[i]['updated']) - dtparse(lastEvents[i]['updated']) \
+         > dtparse('0:00:03.000') - dtparse('0:00:00.000'): #3 sec
+            #try:
+                #print(dtparse(events[i]['updated']) - dtparse(lastEvents[i]['updated']))
+            #except:
+                #pass
+            different = True
+            break
+    if not different:
+        time.sleep(2)
+        continue
+    lastEvents = events
+    
     for event in events:
-        summary = event.get('summary', None)
-        if summary == 'test':
-            start = event['start']['dateTime']
-            end = event['start']['dateTime']
+        summary = event.get('summary', '')
+        #https://docs.python.org/3/howto/regex.html
+        matches = progressRegExp.search(summary)
+        if matches is not None:
+            total, done = matches.group(1, 2)
+            if total == '': total = '100'
+            eventProgress = int(done) / int(total)
+            #print(total, done, eventProgress)
+
+            #https://developers.google.com/calendar/quickstart/python
+            #https://stackoverflow.com/questions/49889379/google-calendar-api-datetime-format-python
+            #https://stackoverflow.com/questions/796008/cant-subtract-offset-naive-and-offset-aware-datetimes
+            start = event['start']
+            end = event['end']
+            start = dtparse(start.get('dateTime', start.get('date'))).replace(tzinfo=None)
+            end = dtparse(end.get('dateTime', end.get('date'))).replace(tzinfo=None)
+            now = datetime.datetime.utcnow()
+            durationProgress = (now - start) / (end - start)
+            #print(start, end, now, durationProgress)
+
+            factor = 4 #if the event has no (0%) progress, it will have max priority when 1/4 of its duration is left
+            eventPriority = (1 - eventProgress) / (1 - durationProgress) / factor
+            eventPriority = max(0, min(1, eventPriority))
+            #print(eventPriority)
+
             #https://lukeboyle.com/blog-posts/2016/04/google-calendar-api---color-id
-            newColor = randint(0, 11)
+            length = len(priorityColorIds)
+            newColor = priorityColorIds[math.ceil(eventPriority * (length - 1))]
             event['colorId'] = newColor
             #print(event['colorId'])
             #https://developers.google.com/calendar/v3/reference/events/update
             service.events().update(calendarId='primary', eventId=event['id'], sendNotifications=False, body=event).execute()
-    time.sleep(.5)
 
 
 
