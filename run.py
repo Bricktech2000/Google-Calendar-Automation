@@ -104,12 +104,12 @@ while True:
             #similarely, when the work left is equal to 0, the output will always be 0 (zero priority)
             #finally, when no time is left and none of the work is left, the output will be 0 (zero priority)
             eventPriority = math.atan2(1 - eventProgress, 1 - durationProgress) * 2 / math.pi
-            eventPriority = max(0, min(1, eventPriority))
+            eventPriority = max(0, min(.99, eventPriority))
             #print(eventProgress, durationProgress, eventPriority)
 
             #https://lukeboyle.com/blog-posts/2016/04/google-calendar-api---color-id
             length = len(priorityColorIds)
-            newColor = priorityColorIds[math.floor(eventPriority * (length - 1))]
+            newColor = priorityColorIds[math.floor(eventPriority * length)]
             event['colorId'] = newColor
 
             try:
