@@ -20,5 +20,5 @@ event progress = event completed / event total
 //event complexity = ...
 //() * event complexity
 
-priority = (1 - event progress) / (1 - duration progress)
+priority = atan2(1 - event progress, 1 - duration progress) * 2 / pi
 ```

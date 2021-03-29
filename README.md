@@ -37,7 +37,7 @@ Usage
 
 Once the program functions correctly, it can be used to change the color of tasks according to their priority:
 
-* This priority is calculated using the following formula: `priority = (1 - event progress) / (1 - duration progress) * factor`, meaning that events whose due date is closer or events that have a small progress percentage will be colored as more important.
+* This priority is calculated using the following formula: `priority = atan2(1 - event progress, 1 - duration progress) * 2 / pi`, meaning that events whose due date is closer or events that have a small progress percentage will be colored as more important.
 * The colors used range from purple to blue to yellow to red, in increasing order of priority. For example, a red-colored event is your prime concern whereas a blue-colored one is not very urgent.
 * All events modified by the program must match the following regular expression: `/(\d*)\%(\d+)$/`. This means that all events must end with a string like `t%d`, where `d/t` represents the current progress of the task. For example, if an event is ment to represent a math assignment where you have solved 15 out of 34 problems, its name would need to be something like the following: `Math Homework 34%15`.
 * When progress is made on a task, its name must be updated to reflect the current progress. For example, if you just solved 3 more math problems, the name of the event must be updated to `Math Homework 34%18`, representing that 18 problems out of 34 have now been solved. You must constantly update the event names for the color-coding to work properly. When this assignment is completed, its name should be modified to `Math Homework 34%34`, meaning that 34 out of the 34 problems have been solved.

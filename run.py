@@ -80,6 +80,7 @@ while True:
             total, done = matches.group(1, 2)
             if total == '': total = '100'
             eventProgress = int(done) / int(total)
+            eventProgress = max(0, min(1, eventProgress))
 
             #https://developers.google.com/calendar/quickstart/python
             #https://stackoverflow.com/questions/49889379/google-calendar-api-datetime-format-python
@@ -90,14 +91,25 @@ while True:
             end = dtparse(end.get('dateTime', end.get('date'))).replace(tzinfo=None)
             now = datetime.datetime.utcnow()
             durationProgress = (now - start) / (end - start)
+            durationProgress = max(0, min(1, durationProgress))
 
-            factor = 3 #if the event has no (0%) progress, it will have max priority when 1/3 of its duration is left
-            eventPriority = (1 - eventProgress) / (1 - durationProgress) / factor
+            #factor = 3 #if the event has no (0%) progress, it will have max priority when 1/3 of its duration is left
+            #eventPriority = (1 - eventProgress) * (durationProgress ** .5)
+            #eventPriority = (1 - eventProgress) * math.sin((1 - durationProgress) * math.pi / 2) + (1 - durationProgress) * math.sin((1 - eventProgress) * math.pi / 2)
+
+            #the time left (from 0 to 1) is on the X axis
+            #the work left (from 0 to 1) is on the Y axis
+            #the angle from the X axis (rotating counterclockwise, 1/4 turn) is the priority of the event
+            #this way, when the time left is equal to 0, the output will always be 1 (max priority)
+            #similarely, when the work left is equal to 0, the output will always be 0 (zero priority)
+            #finally, when no time is left and none of the work is left, the output will be 0 (zero priority)
+            eventPriority = math.atan2(1 - eventProgress, 1 - durationProgress) * 2 / math.pi
             eventPriority = max(0, min(1, eventPriority))
+            #print(eventProgress, durationProgress, eventPriority)
 
             #https://lukeboyle.com/blog-posts/2016/04/google-calendar-api---color-id
             length = len(priorityColorIds)
-            newColor = priorityColorIds[math.ceil(eventPriority * (length - 1))]
+            newColor = priorityColorIds[math.floor(eventPriority * (length - 1))]
             event['colorId'] = newColor
 
             try:
