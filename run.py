@@ -91,7 +91,7 @@ while True:
             now = datetime.datetime.utcnow()
             durationProgress = (now - start) / (end - start)
 
-            factor = 4 #if the event has no (0%) progress, it will have max priority when 1/4 of its duration is left
+            factor = 3 #if the event has no (0%) progress, it will have max priority when 1/3 of its duration is left
             eventPriority = (1 - eventProgress) / (1 - durationProgress) / factor
             eventPriority = max(0, min(1, eventPriority))
 
