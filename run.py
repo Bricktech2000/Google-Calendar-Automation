@@ -23,7 +23,7 @@ import math
 import time
 import re
 
-priorityColorIds = [8, 3, 1, 2, 5, 6, 11]
+priorityColorIds = [8, 9, 10, 2, 5, 6, 11]
 progressRegExp = re.compile(r'(\d*)\%(\d+)$')
 
 
